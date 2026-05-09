@@ -7,39 +7,20 @@
 # Local external dependencies
 /external/
 
-# Nix / direnv
-/result
-/.direnv/
-/.envrc
-
 # Simulator outputs
 *.vcd
 *.fst
 *.vvp
 
-# Transfer/archive artifacts
+# Patch/editor/archive leftovers
+*.rej
+*.orig
 *.patch
 *.zip
 *.tar.gz
-
-# Patch/editor leftovers
-*.rej
-*.orig
 *~
-# Local external dependencies
-/external/
 
-# Nix/direnv local artifacts
+# Nix/direnv local outputs
 /result
 /.direnv/
 /.envrc
-
-# Simulator outputs
-*.vcd
-*.fst
-*.vvp
-
-# Patch/editor leftovers
-*.rej
-*.orig
-*~

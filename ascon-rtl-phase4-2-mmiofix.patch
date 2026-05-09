@@ -1,0 +1,247 @@
+diff --git a/doc/phase3_5.md b/doc/phase3_5.md
+index d5b4214..8d5fff8 100644
+--- a/doc/phase3_5.md
++++ b/doc/phase3_5.md
+@@ -11,13 +11,13 @@ ready/valid stream used by `ascon_aead128_buffered`.
+ 
+ ## Lane order
+ 
+-Both adapters use the same little-lane 32-bit order:
++Both adapters use 32-bit byte-stream order for the internal Ascon block layout:
+ 
+ ```text
+-word 0 <-> block[31:0]
+-word 1 <-> block[63:32]
+-word 2 <-> block[95:64]
+-word 3 <-> block[127:96]
++word 0 <-> block[95:64]   (bytes 0..3)
++word 1 <-> block[127:96]  (bytes 4..7)
++word 2 <-> block[31:0]    (bytes 8..11)
++word 3 <-> block[63:32]   (bytes 12..15)
+ ```
+ 
+ This is a bit-vector packing convention only.  It does not change the Ascon
+diff --git a/doc/phase4_1.md b/doc/phase4_1.md
+index 7a7300e..c1513a1 100644
+--- a/doc/phase4_1.md
++++ b/doc/phase4_1.md
+@@ -58,14 +58,14 @@ Byte addresses:
+ 
+ ## Packing convention
+ 
+-The wrapper uses the same raw internal 32-bit lane order as the Phase 3.5 block
++The AD/DATA stream ports use the same 32-bit byte-stream order as the Phase 3.5 block
+ adapters:
+ 
+ ```text
+-word 0 <-> block[31:0]
+-word 1 <-> block[63:32]
+-word 2 <-> block[95:64]
+-word 3 <-> block[127:96]
++word 0 <-> block[95:64]   (bytes 0..3)
++word 1 <-> block[127:96]  (bytes 4..7)
++word 2 <-> block[31:0]    (bytes 8..11)
++word 3 <-> block[63:32]   (bytes 12..15)
+ ```
+ 
+ This is not yet a user-friendly byte-string API.  The software driver or a later
+diff --git a/rtl/ascon_aead128_mmio32.v b/rtl/ascon_aead128_mmio32.v
+index 85b33d3..14ce98d 100644
+--- a/rtl/ascon_aead128_mmio32.v
++++ b/rtl/ascon_aead128_mmio32.v
+@@ -23,9 +23,10 @@
+ //   0x50..0x5c RESULT read generated tag words for encryption, zero for decrypt
+ //   0x60 LEVELS     read FIFO levels
+ //
+-// Register/bus byte order is deliberately raw internal lane order.  Software or
+-// a later platform wrapper must convert from external byte strings to this word
+-// order.  This keeps the cryptographic core bus-agnostic.
++// AD/DATA stream word order is byte-stream order: word 0 carries bytes 0..3
++// of each 16-byte block, word 1 carries bytes 4..7, word 2 carries bytes
++// 8..11, and word 3 carries bytes 12..15. KEY/NONCE/TAG registers remain raw
++// 128-bit register slices, word0 at bits [31:0].
+ 
+ `default_nettype none
+ 
+@@ -86,6 +87,7 @@ module ascon_aead128_mmio32 #(
+   reg [31:0]  msg_bytes_q;
+   reg [31:0]  ad_write_remaining_q;
+   reg [31:0]  data_write_remaining_q;
++  reg [31:0]  data_read_remaining_q;
+ 
+   wire is_ctrl_w      = (reg_addr_i == ADDR_CTRL);
+   wire is_ad_in_w     = (reg_addr_i == ADDR_AD_IN);
+@@ -175,6 +177,8 @@ module ascon_aead128_mmio32 #(
+   wire [2:0] data_word_bytes_w = bytes_next_word(data_write_remaining_q);
+   wire ad_word_last_w          = last_next_word(ad_write_remaining_q);
+   wire data_word_last_w        = last_next_word(data_write_remaining_q);
++  wire [2:0] data_out_word_bytes_global_w = bytes_next_word(data_read_remaining_q);
++  wire       data_out_word_last_global_w  = last_next_word(data_read_remaining_q);
+ 
+   assign reg_ready_o = !reg_valid_i ? 1'b1 :
+                        (reg_write_i && is_ad_in_w) ? ad_word_ready_w :
+@@ -239,6 +243,8 @@ module ascon_aead128_mmio32 #(
+   wire [1:0] unused_data_packer_fill_words_w = data_packer_fill_words_w;
+   wire [4:0] unused_data_packer_fill_bytes_w = data_packer_fill_bytes_w;
+   wire       unused_data_packer_block_pending_w = data_packer_block_pending_w;
++  wire [2:0] unused_data_out_word_bytes_w = data_out_word_bytes_w;
++  wire       unused_data_out_word_last_w = data_out_word_last_w;
+   wire       unused_data_unpacker_active_w = data_unpacker_active_w;
+   wire [1:0] unused_data_unpacker_word_index_w = data_unpacker_word_index_w;
+   wire [2:0] unused_data_unpacker_words_left_w = data_unpacker_words_left_w;
+@@ -319,8 +325,8 @@ module ascon_aead128_mmio32 #(
+         reg_rdata_o[6]      = ad_word_ready_w;
+         reg_rdata_o[7]      = data_word_ready_w;
+         reg_rdata_o[8]      = irq_o;
+-        reg_rdata_o[11:9]   = data_out_word_bytes_w;
+-        reg_rdata_o[12]     = data_out_word_last_w;
++        reg_rdata_o[11:9]   = data_out_word_bytes_global_w;
++        reg_rdata_o[12]     = data_out_word_last_global_w;
+         reg_rdata_o[16]     = ad_fifo_empty_w;
+         reg_rdata_o[17]     = ad_fifo_full_w;
+         reg_rdata_o[18]     = data_in_fifo_empty_w;
+@@ -344,8 +350,8 @@ module ascon_aead128_mmio32 #(
+       ADDR_TAG3:      reg_rdata_o = tag_in_q[127:96];
+       ADDR_DATA_OUT:  reg_rdata_o = data_out_word_w;
+       ADDR_DOUT_META: begin
+-        reg_rdata_o[2:0] = data_out_word_bytes_w;
+-        reg_rdata_o[8]   = data_out_word_last_w;
++        reg_rdata_o[2:0] = data_out_word_bytes_global_w;
++        reg_rdata_o[8]   = data_out_word_last_global_w;
+         reg_rdata_o[16]  = data_out_word_valid_w;
+       end
+       ADDR_RES0:      reg_rdata_o = result_tag_q[31:0];
+@@ -373,6 +379,7 @@ module ascon_aead128_mmio32 #(
+       msg_bytes_q              <= 32'd0;
+       ad_write_remaining_q     <= 32'd0;
+       data_write_remaining_q   <= 32'd0;
++      data_read_remaining_q    <= 32'd0;
+     end else begin
+       if (result_valid_w && result_ready_w) begin
+         result_tag_q     <= result_tag_w;
+@@ -387,6 +394,7 @@ module ascon_aead128_mmio32 #(
+       if (ctrl_clear_w) begin
+         ad_write_remaining_q   <= ad_bytes_q;
+         data_write_remaining_q <= msg_bytes_q;
++        data_read_remaining_q  <= msg_bytes_q;
+       end
+ 
+       if (write_transfer_w && full_word_write_w) begin
+@@ -398,6 +406,7 @@ module ascon_aead128_mmio32 #(
+           ADDR_MSG_BYTES: begin
+             msg_bytes_q            <= reg_wdata_i;
+             data_write_remaining_q <= reg_wdata_i;
++            data_read_remaining_q  <= reg_wdata_i;
+           end
+           ADDR_KEY0:   key_q[31:0]     <= reg_wdata_i;
+           ADDR_KEY1:   key_q[63:32]    <= reg_wdata_i;
+@@ -431,6 +440,14 @@ module ascon_aead128_mmio32 #(
+           data_write_remaining_q <= data_write_remaining_q - 32'd4;
+         end
+       end
++
++      if (read_transfer_w && is_data_out_w && (data_read_remaining_q != 32'd0)) begin
++        if (data_read_remaining_q <= 32'd4) begin
++          data_read_remaining_q <= 32'd0;
++        end else begin
++          data_read_remaining_q <= data_read_remaining_q - 32'd4;
++        end
++      end
+     end
+   end
+ 
+diff --git a/rtl/ascon_block_packer32.v b/rtl/ascon_block_packer32.v
+index 13a879b..22c8655 100644
+--- a/rtl/ascon_block_packer32.v
++++ b/rtl/ascon_block_packer32.v
+@@ -7,11 +7,12 @@
+ // wrappers.  It collects 32-bit words into the internal 128-bit Ascon block
+ // order used by the bus-agnostic cores.
+ //
+-// Lane order:
+-//   accepted word 0 -> block_data_o[31:0]
+-//   accepted word 1 -> block_data_o[63:32]
+-//   accepted word 2 -> block_data_o[95:64]
+-//   accepted word 3 -> block_data_o[127:96]
++// Lane order is byte-stream order for the internal Ascon block layout
++// {W0, W1}, where W0 is the first 8 bytes and sits in block[127:64]:
++//   accepted word 0 -> block_data_o[95:64]   // bytes 0..3
++//   accepted word 1 -> block_data_o[127:96]  // bytes 4..7
++//   accepted word 2 -> block_data_o[31:0]    // bytes 8..11
++//   accepted word 3 -> block_data_o[63:32]   // bytes 12..15
+ //
+ // word_bytes_i gives the number of valid low-order bytes in word_data_i.  It
+ // must be 1, 2, 3, or 4 when word_valid_i is high.  word_last_i flushes a
+@@ -82,10 +83,10 @@ module ascon_block_packer32 (
+     begin
+       insert_word = old_block;
+       case (idx)
+-        2'd0: insert_word[31:0]    = word;
+-        2'd1: insert_word[63:32]   = word;
+-        2'd2: insert_word[95:64]   = word;
+-        default: insert_word[127:96] = word;
++        2'd0: insert_word[95:64]    = word;
++        2'd1: insert_word[127:96]   = word;
++        2'd2: insert_word[31:0]     = word;
++        default: insert_word[63:32] = word;
+       endcase
+     end
+   endfunction
+diff --git a/rtl/ascon_block_unpacker32.v b/rtl/ascon_block_unpacker32.v
+index 15b5d4a..ebfe38f 100644
+--- a/rtl/ascon_block_unpacker32.v
++++ b/rtl/ascon_block_unpacker32.v
+@@ -7,11 +7,12 @@
+ // internal 128-bit Ascon block plus a byte count and emits the valid low-order
+ // 32-bit lanes in order.
+ //
+-// Lane order:
+-//   output word 0 = block_data_i[31:0]
+-//   output word 1 = block_data_i[63:32]
+-//   output word 2 = block_data_i[95:64]
+-//   output word 3 = block_data_i[127:96]
++// Lane order is byte-stream order for the internal Ascon block layout
++// {W0, W1}, where W0 is the first 8 bytes and sits in block[127:64]:
++//   output word 0 = block_data_i[95:64]   // bytes 0..3
++//   output word 1 = block_data_i[127:96]  // bytes 4..7
++//   output word 2 = block_data_i[31:0]    // bytes 8..11
++//   output word 3 = block_data_i[63:32]   // bytes 12..15
+ 
+ `default_nettype none
+ 
+@@ -70,10 +71,10 @@ module ascon_block_unpacker32 (
+     input [1:0] idx;
+     begin
+       case (idx)
+-        2'd0: select_word = block[31:0];
+-        2'd1: select_word = block[63:32];
+-        2'd2: select_word = block[95:64];
+-        default: select_word = block[127:96];
++        2'd0: select_word = block[95:64];
++        2'd1: select_word = block[127:96];
++        2'd2: select_word = block[31:0];
++        default: select_word = block[63:32];
+       endcase
+     end
+   endfunction
+diff --git a/sim/tb/tb_ascon_aead128_mmio32.v b/sim/tb/tb_ascon_aead128_mmio32.v
+index 8db9cfc..6982269 100644
+--- a/sim/tb/tb_ascon_aead128_mmio32.v
++++ b/sim/tb/tb_ascon_aead128_mmio32.v
+@@ -160,11 +160,12 @@ module tb_ascon_aead128_mmio32;
+     input [127:0] block;
+     input integer idx;
+     begin
++      // Byte-stream order for internal Ascon blocks {first8, second8}.
+       case (idx)
+-        0: select_word = block[31:0];
+-        1: select_word = block[63:32];
+-        2: select_word = block[95:64];
+-        default: select_word = block[127:96];
++        0: select_word = block[95:64];
++        1: select_word = block[127:96];
++        2: select_word = block[31:0];
++        default: select_word = block[63:32];
+       endcase
+     end
+   endfunction

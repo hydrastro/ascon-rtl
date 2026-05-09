@@ -1,0 +1,23 @@
+# Build products
+/build/
+
+# Generated simulation vectors
+/sim/generated/*.vh
+
+# Local external dependencies
+/external/
+
+# Nix/direnv local artifacts
+/result
+/.direnv/
+/.envrc
+
+# Simulator outputs
+*.vcd
+*.fst
+*.vvp
+
+# Patch/editor leftovers
+*.rej
+*.orig
+*~

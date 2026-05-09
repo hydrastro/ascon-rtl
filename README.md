@@ -7,25 +7,13 @@ AXI, and Tiny Tapeout integration should live in separate wrapper repositories.
 
 ## Phase status
 
-<<<<<<< HEAD
-Implemented in Phase 0/1:
-=======
 Implemented so far:
->>>>>>> update
 
 - reproducible Nix flake development shell
 - upstream `ascon/ascon-c` source wired as the declared golden reference
 - one-round combinational ASCON primitive
 - parameterized p[12]/p[8]/p[6] permutation controller
 - self-checking Icarus Verilog testbench for `ROUNDS_PER_CYCLE = 1, 2, 4, 8`
-<<<<<<< HEAD
-
-Not implemented yet:
-
-- AEAD mode
-- padding and partial blocks
-- tag generation or tag verification
-=======
 - Phase 2.1 AEAD128 encryption skeleton: no AD, whole 16-byte message blocks only
 - Phase 2.1 tag generation for the supported subset
 
@@ -34,7 +22,6 @@ Not implemented yet:
 - partial plaintext/ciphertext blocks
 - associated data
 - decryption and tag verification
->>>>>>> update
 - NEORV32 CFS/XBUS/SLINK wrappers
 - AXI wrappers
 - Tiny Tapeout wrapper
@@ -44,11 +31,7 @@ Not implemented yet:
 ```sh
 nix develop
 make vectors-ascon-c
-<<<<<<< HEAD
-make sim-iverilog
-=======
 make sim
->>>>>>> update
 ```
 
 The flake exports `ASCON_C_DIR` to the checked-out `ascon/ascon-c` source in the
@@ -59,11 +42,7 @@ Without Nix:
 ```sh
 git clone https://github.com/ascon/ascon-c external/ascon-c
 make vectors-ascon-c ASCON_C_DIR=external/ascon-c
-<<<<<<< HEAD
-make sim-iverilog
-=======
 make sim
->>>>>>> update
 ```
 
 A Python fallback exists for quick local work:
@@ -79,10 +58,7 @@ but the preferred reference path is `make vectors-ascon-c`.
 ```text
 rtl/ascon_round_comb.v
 rtl/ascon_perm_unrolled.v
-<<<<<<< HEAD
-=======
 rtl/ascon_aead128_fullblock_enc.v
->>>>>>> update
 ```
 
 ## State packing convention
@@ -96,13 +72,8 @@ state[63:0]    = S4
 ```
 
 This is a word-level convention for the internal permutation. Byte-string
-<<<<<<< HEAD
-parsing, padding, and little-endian external data handling belong in the AEAD
-layer, not in the raw permutation primitive.
-=======
 parsing and little-endian external data handling belong in wrappers or mode
 adapters. The Phase 2.1 AEAD core consumes internal Ascon words directly.
->>>>>>> update
 
 ## Throughput model for the later AEAD core
 

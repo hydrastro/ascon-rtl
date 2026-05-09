@@ -695,3 +695,91 @@ synth-axis-ingress-yosys: | $(BUILD_DIR)
 synth-axis-egress-yosys: | $(BUILD_DIR)
 	$(YOSYS) -p 'read_verilog $(RTL_DIR)/axi/ascon_axis_egress128.v; synth -top ascon_axis_egress128; check; stat' > $(BUILD_DIR)/yosys_axis_egress_stat.txt
 	cat $(BUILD_DIR)/yosys_axis_egress_stat.txt
+
+# ---------------------------------------------------------------------------
+# PHASE 5.2 AXI4-STREAM AEAD SHELL
+# ---------------------------------------------------------------------------
+
+AXIS_AEAD_RTL_FILES := \
+	$(RTL_FILES) \
+	$(RTL_DIR)/axi/ascon_axis_ingress128.v \
+	$(RTL_DIR)/axi/ascon_axis_egress128.v \
+	$(RTL_DIR)/axi/ascon_aead128_axis.v
+
+TB_AEAD_AXIS_FILE := $(TB_DIR)/tb_ascon_aead128_axis.v
+
+.PHONY: sim-aead-axis-iverilog \
+	sim-aead-axis-enc-rpc1 sim-aead-axis-enc-rpc2 sim-aead-axis-enc-rpc4 sim-aead-axis-enc-rpc8 \
+	sim-aead-axis-dec-rpc1 sim-aead-axis-dec-rpc2 sim-aead-axis-dec-rpc4 sim-aead-axis-dec-rpc8 \
+	lint-axis-aead-verilator synth-aead-axis-yosys synth-aead-axis-enc-rpc1 synth-aead-axis-enc-rpc2 synth-aead-axis-enc-rpc4 synth-aead-axis-enc-rpc8 \
+	synth-aead-axis-dec-rpc1 synth-aead-axis-dec-rpc2 synth-aead-axis-dec-rpc4 synth-aead-axis-dec-rpc8
+
+sim-aead-axis-iverilog: sim-aead-axis-enc-rpc1 sim-aead-axis-enc-rpc2 sim-aead-axis-enc-rpc4 sim-aead-axis-enc-rpc8 \
+	sim-aead-axis-dec-rpc1 sim-aead-axis-dec-rpc2 sim-aead-axis-dec-rpc4 sim-aead-axis-dec-rpc8
+
+sim-aead-axis-enc-rpc1: $(BUILD_DIR)/tb_ascon_aead128_axis_enc_rpc1.vvp
+	$(VVP) $<
+sim-aead-axis-enc-rpc2: $(BUILD_DIR)/tb_ascon_aead128_axis_enc_rpc2.vvp
+	$(VVP) $<
+sim-aead-axis-enc-rpc4: $(BUILD_DIR)/tb_ascon_aead128_axis_enc_rpc4.vvp
+	$(VVP) $<
+sim-aead-axis-enc-rpc8: $(BUILD_DIR)/tb_ascon_aead128_axis_enc_rpc8.vvp
+	$(VVP) $<
+sim-aead-axis-dec-rpc1: $(BUILD_DIR)/tb_ascon_aead128_axis_dec_rpc1.vvp
+	$(VVP) $<
+sim-aead-axis-dec-rpc2: $(BUILD_DIR)/tb_ascon_aead128_axis_dec_rpc2.vvp
+	$(VVP) $<
+sim-aead-axis-dec-rpc4: $(BUILD_DIR)/tb_ascon_aead128_axis_dec_rpc4.vvp
+	$(VVP) $<
+sim-aead-axis-dec-rpc8: $(BUILD_DIR)/tb_ascon_aead128_axis_dec_rpc8.vvp
+	$(VVP) $<
+
+$(BUILD_DIR)/tb_ascon_aead128_axis_enc_rpc1.vvp: $(AXIS_AEAD_RTL_FILES) $(TB_AEAD_AXIS_FILE) $(VEC_AEAD_AD_FILE) | $(BUILD_DIR)
+	$(IVERILOG) $(IVFLAGS) -I$(RTL_DIR)/axi -P tb_ascon_aead128_axis.DECRYPT=0 -P tb_ascon_aead128_axis.RPC=1 -o $@ $(TB_AEAD_AXIS_FILE) $(AXIS_AEAD_RTL_FILES)
+$(BUILD_DIR)/tb_ascon_aead128_axis_enc_rpc2.vvp: $(AXIS_AEAD_RTL_FILES) $(TB_AEAD_AXIS_FILE) $(VEC_AEAD_AD_FILE) | $(BUILD_DIR)
+	$(IVERILOG) $(IVFLAGS) -I$(RTL_DIR)/axi -P tb_ascon_aead128_axis.DECRYPT=0 -P tb_ascon_aead128_axis.RPC=2 -o $@ $(TB_AEAD_AXIS_FILE) $(AXIS_AEAD_RTL_FILES)
+$(BUILD_DIR)/tb_ascon_aead128_axis_enc_rpc4.vvp: $(AXIS_AEAD_RTL_FILES) $(TB_AEAD_AXIS_FILE) $(VEC_AEAD_AD_FILE) | $(BUILD_DIR)
+	$(IVERILOG) $(IVFLAGS) -I$(RTL_DIR)/axi -P tb_ascon_aead128_axis.DECRYPT=0 -P tb_ascon_aead128_axis.RPC=4 -o $@ $(TB_AEAD_AXIS_FILE) $(AXIS_AEAD_RTL_FILES)
+$(BUILD_DIR)/tb_ascon_aead128_axis_enc_rpc8.vvp: $(AXIS_AEAD_RTL_FILES) $(TB_AEAD_AXIS_FILE) $(VEC_AEAD_AD_FILE) | $(BUILD_DIR)
+	$(IVERILOG) $(IVFLAGS) -I$(RTL_DIR)/axi -P tb_ascon_aead128_axis.DECRYPT=0 -P tb_ascon_aead128_axis.RPC=8 -o $@ $(TB_AEAD_AXIS_FILE) $(AXIS_AEAD_RTL_FILES)
+
+$(BUILD_DIR)/tb_ascon_aead128_axis_dec_rpc1.vvp: $(AXIS_AEAD_RTL_FILES) $(TB_AEAD_AXIS_FILE) $(VEC_AEAD_AD_FILE) | $(BUILD_DIR)
+	$(IVERILOG) $(IVFLAGS) -I$(RTL_DIR)/axi -P tb_ascon_aead128_axis.DECRYPT=1 -P tb_ascon_aead128_axis.RPC=1 -o $@ $(TB_AEAD_AXIS_FILE) $(AXIS_AEAD_RTL_FILES)
+$(BUILD_DIR)/tb_ascon_aead128_axis_dec_rpc2.vvp: $(AXIS_AEAD_RTL_FILES) $(TB_AEAD_AXIS_FILE) $(VEC_AEAD_AD_FILE) | $(BUILD_DIR)
+	$(IVERILOG) $(IVFLAGS) -I$(RTL_DIR)/axi -P tb_ascon_aead128_axis.DECRYPT=1 -P tb_ascon_aead128_axis.RPC=2 -o $@ $(TB_AEAD_AXIS_FILE) $(AXIS_AEAD_RTL_FILES)
+$(BUILD_DIR)/tb_ascon_aead128_axis_dec_rpc4.vvp: $(AXIS_AEAD_RTL_FILES) $(TB_AEAD_AXIS_FILE) $(VEC_AEAD_AD_FILE) | $(BUILD_DIR)
+	$(IVERILOG) $(IVFLAGS) -I$(RTL_DIR)/axi -P tb_ascon_aead128_axis.DECRYPT=1 -P tb_ascon_aead128_axis.RPC=4 -o $@ $(TB_AEAD_AXIS_FILE) $(AXIS_AEAD_RTL_FILES)
+$(BUILD_DIR)/tb_ascon_aead128_axis_dec_rpc8.vvp: $(AXIS_AEAD_RTL_FILES) $(TB_AEAD_AXIS_FILE) $(VEC_AEAD_AD_FILE) | $(BUILD_DIR)
+	$(IVERILOG) $(IVFLAGS) -I$(RTL_DIR)/axi -P tb_ascon_aead128_axis.DECRYPT=1 -P tb_ascon_aead128_axis.RPC=8 -o $@ $(TB_AEAD_AXIS_FILE) $(AXIS_AEAD_RTL_FILES)
+
+lint-axis-aead-verilator:
+	$(VERILATOR) --lint-only --timing -Wall -I$(GEN_DIR) -I$(RTL_DIR) -I$(RTL_DIR)/axi --top-module ascon_aead128_axis $(AXIS_AEAD_RTL_FILES)
+
+synth-aead-axis-yosys: synth-aead-axis-enc-rpc1 synth-aead-axis-enc-rpc2 synth-aead-axis-enc-rpc4 synth-aead-axis-enc-rpc8 \
+	synth-aead-axis-dec-rpc1 synth-aead-axis-dec-rpc2 synth-aead-axis-dec-rpc4 synth-aead-axis-dec-rpc8
+
+synth-aead-axis-enc-rpc1: | $(BUILD_DIR)
+	$(YOSYS) -p 'read_verilog $(AXIS_AEAD_RTL_FILES); chparam -set DECRYPT 0 -set ROUNDS_PER_CYCLE 1 ascon_aead128_axis; synth -top ascon_aead128_axis; check; stat' > $(BUILD_DIR)/yosys_aead_axis_enc_rpc1_stat.txt
+	cat $(BUILD_DIR)/yosys_aead_axis_enc_rpc1_stat.txt
+synth-aead-axis-enc-rpc2: | $(BUILD_DIR)
+	$(YOSYS) -p 'read_verilog $(AXIS_AEAD_RTL_FILES); chparam -set DECRYPT 0 -set ROUNDS_PER_CYCLE 2 ascon_aead128_axis; synth -top ascon_aead128_axis; check; stat' > $(BUILD_DIR)/yosys_aead_axis_enc_rpc2_stat.txt
+	cat $(BUILD_DIR)/yosys_aead_axis_enc_rpc2_stat.txt
+synth-aead-axis-enc-rpc4: | $(BUILD_DIR)
+	$(YOSYS) -p 'read_verilog $(AXIS_AEAD_RTL_FILES); chparam -set DECRYPT 0 -set ROUNDS_PER_CYCLE 4 ascon_aead128_axis; synth -top ascon_aead128_axis; check; stat' > $(BUILD_DIR)/yosys_aead_axis_enc_rpc4_stat.txt
+	cat $(BUILD_DIR)/yosys_aead_axis_enc_rpc4_stat.txt
+synth-aead-axis-enc-rpc8: | $(BUILD_DIR)
+	$(YOSYS) -p 'read_verilog $(AXIS_AEAD_RTL_FILES); chparam -set DECRYPT 0 -set ROUNDS_PER_CYCLE 8 ascon_aead128_axis; synth -top ascon_aead128_axis; check; stat' > $(BUILD_DIR)/yosys_aead_axis_enc_rpc8_stat.txt
+	cat $(BUILD_DIR)/yosys_aead_axis_enc_rpc8_stat.txt
+
+synth-aead-axis-dec-rpc1: | $(BUILD_DIR)
+	$(YOSYS) -p 'read_verilog $(AXIS_AEAD_RTL_FILES); chparam -set DECRYPT 1 -set ROUNDS_PER_CYCLE 1 ascon_aead128_axis; synth -top ascon_aead128_axis; check; stat' > $(BUILD_DIR)/yosys_aead_axis_dec_rpc1_stat.txt
+	cat $(BUILD_DIR)/yosys_aead_axis_dec_rpc1_stat.txt
+synth-aead-axis-dec-rpc2: | $(BUILD_DIR)
+	$(YOSYS) -p 'read_verilog $(AXIS_AEAD_RTL_FILES); chparam -set DECRYPT 1 -set ROUNDS_PER_CYCLE 2 ascon_aead128_axis; synth -top ascon_aead128_axis; check; stat' > $(BUILD_DIR)/yosys_aead_axis_dec_rpc2_stat.txt
+	cat $(BUILD_DIR)/yosys_aead_axis_dec_rpc2_stat.txt
+synth-aead-axis-dec-rpc4: | $(BUILD_DIR)
+	$(YOSYS) -p 'read_verilog $(AXIS_AEAD_RTL_FILES); chparam -set DECRYPT 1 -set ROUNDS_PER_CYCLE 4 ascon_aead128_axis; synth -top ascon_aead128_axis; check; stat' > $(BUILD_DIR)/yosys_aead_axis_dec_rpc4_stat.txt
+	cat $(BUILD_DIR)/yosys_aead_axis_dec_rpc4_stat.txt
+synth-aead-axis-dec-rpc8: | $(BUILD_DIR)
+	$(YOSYS) -p 'read_verilog $(AXIS_AEAD_RTL_FILES); chparam -set DECRYPT 1 -set ROUNDS_PER_CYCLE 8 ascon_aead128_axis; synth -top ascon_aead128_axis; check; stat' > $(BUILD_DIR)/yosys_aead_axis_dec_rpc8_stat.txt
+	cat $(BUILD_DIR)/yosys_aead_axis_dec_rpc8_stat.txt

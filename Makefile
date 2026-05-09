@@ -663,3 +663,35 @@ clean:
 
 distclean: clean
 	rm -f $(GEN_DIR)/*.vh
+
+# ---------------------------------------------------------------------------
+# PHASE 5.1 AXI4-STREAM ADAPTERS
+# ---------------------------------------------------------------------------
+
+AXI_RTL_FILES := \
+	$(RTL_DIR)/axi/ascon_axis_ingress128.v \
+	$(RTL_DIR)/axi/ascon_axis_egress128.v
+
+TB_AXIS_ADAPTERS_FILE := $(TB_DIR)/tb_ascon_axis_adapters.v
+
+.PHONY: sim-axis-adapters-iverilog lint-axis-verilator synth-axis-adapters-yosys synth-axis-ingress-yosys synth-axis-egress-yosys
+
+sim-axis-adapters-iverilog: $(BUILD_DIR)/tb_ascon_axis_adapters.vvp
+	$(VVP) $<
+
+$(BUILD_DIR)/tb_ascon_axis_adapters.vvp: $(AXI_RTL_FILES) $(TB_AXIS_ADAPTERS_FILE) | $(BUILD_DIR)
+	$(IVERILOG) $(IVFLAGS) -I$(RTL_DIR)/axi -o $@ $(TB_AXIS_ADAPTERS_FILE) $(AXI_RTL_FILES)
+
+lint-axis-verilator:
+	$(VERILATOR) --lint-only --timing -Wall -I$(RTL_DIR) -I$(RTL_DIR)/axi --top-module ascon_axis_ingress128 $(AXI_RTL_FILES)
+	$(VERILATOR) --lint-only --timing -Wall -I$(RTL_DIR) -I$(RTL_DIR)/axi --top-module ascon_axis_egress128 $(AXI_RTL_FILES)
+
+synth-axis-adapters-yosys: synth-axis-ingress-yosys synth-axis-egress-yosys
+
+synth-axis-ingress-yosys: | $(BUILD_DIR)
+	$(YOSYS) -p 'read_verilog $(RTL_DIR)/axi/ascon_axis_ingress128.v; synth -top ascon_axis_ingress128; check; stat' > $(BUILD_DIR)/yosys_axis_ingress_stat.txt
+	cat $(BUILD_DIR)/yosys_axis_ingress_stat.txt
+
+synth-axis-egress-yosys: | $(BUILD_DIR)
+	$(YOSYS) -p 'read_verilog $(RTL_DIR)/axi/ascon_axis_egress128.v; synth -top ascon_axis_egress128; check; stat' > $(BUILD_DIR)/yosys_axis_egress_stat.txt
+	cat $(BUILD_DIR)/yosys_axis_egress_stat.txt

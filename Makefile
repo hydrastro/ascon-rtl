@@ -19,6 +19,7 @@ ASCON_C_DIR ?= external/ascon-c
 RTL_FILES := \
 	$(RTL_DIR)/ascon_round_comb.v \
 	$(RTL_DIR)/ascon_perm_unrolled.v \
+	$(RTL_DIR)/ascon_stream_fifo.v \
 	$(RTL_DIR)/ascon_aead128_fullblock_enc.v \
 	$(RTL_DIR)/ascon_aead128_enc.v \
 	$(RTL_DIR)/ascon_aead128_enc_ad.v \
@@ -29,6 +30,7 @@ TB_AEAD_FILE := $(TB_DIR)/tb_ascon_aead128_fullblock_enc.v
 TB_AEAD_VAR_FILE := $(TB_DIR)/tb_ascon_aead128_enc.v
 TB_AEAD_AD_FILE := $(TB_DIR)/tb_ascon_aead128_enc_ad.v
 TB_AEAD_DEC_AD_FILE := $(TB_DIR)/tb_ascon_aead128_dec_ad.v
+TB_FIFO_FILE := $(TB_DIR)/tb_ascon_stream_fifo.v
 VEC_PERM_FILE := $(GEN_DIR)/ascon_perm_vectors.vh
 VEC_AEAD_FILE := $(GEN_DIR)/ascon_aead128_fullblock_vectors.vh
 VEC_AEAD_VAR_FILE := $(GEN_DIR)/ascon_aead128_vectors.vh
@@ -40,7 +42,7 @@ IVFLAGS := -g2005-sv -I$(GEN_DIR) -I$(RTL_DIR)
 	sim-aead-var-iverilog sim-aead-var-rpc1 sim-aead-var-rpc2 sim-aead-var-rpc4 sim-aead-var-rpc8 \
 	sim-aead-ad-iverilog sim-aead-ad-rpc1 sim-aead-ad-rpc2 sim-aead-ad-rpc4 sim-aead-ad-rpc8 \
 	sim-aead-dec-ad-iverilog sim-aead-dec-ad-rpc1 sim-aead-dec-ad-rpc2 sim-aead-dec-ad-rpc4 sim-aead-dec-ad-rpc8 \
-	vectors vectors-python vectors-ascon-c lint-verilator \
+	sim-fifo-iverilog vectors vectors-python vectors-ascon-c lint-verilator \
 	synth-yosys synth-rpc1 synth-rpc2 synth-rpc4 synth-rpc8 \
 	synth-aead-yosys synth-aead-rpc1 synth-aead-rpc2 synth-aead-rpc4 synth-aead-rpc8 \
 	synth-aead-var-yosys synth-aead-var-rpc1 synth-aead-var-rpc2 synth-aead-var-rpc4 synth-aead-var-rpc8 \
@@ -49,7 +51,7 @@ IVFLAGS := -g2005-sv -I$(GEN_DIR) -I$(RTL_DIR)
 
 all: sim
 
-sim: sim-iverilog sim-aead-iverilog sim-aead-var-iverilog sim-aead-ad-iverilog sim-aead-dec-ad-iverilog
+sim: sim-iverilog sim-aead-iverilog sim-aead-var-iverilog sim-aead-ad-iverilog sim-aead-dec-ad-iverilog sim-fifo-iverilog
 
 vectors: vectors-ascon-c
 
@@ -229,12 +231,20 @@ $(BUILD_DIR)/tb_ascon_aead128_dec_ad_rpc8.vvp: $(RTL_FILES) $(TB_AEAD_DEC_AD_FIL
 	$(IVERILOG) $(IVFLAGS) -P tb_ascon_aead128_dec_ad.RPC=8 -o $@ $(TB_AEAD_DEC_AD_FILE) $(RTL_FILES)
 
 
+
+sim-fifo-iverilog: $(BUILD_DIR)/tb_ascon_stream_fifo.vvp
+	$(VVP) $<
+
+$(BUILD_DIR)/tb_ascon_stream_fifo.vvp: $(RTL_FILES) $(TB_FIFO_FILE) | $(BUILD_DIR)
+	$(IVERILOG) $(IVFLAGS) -o $@ $(TB_FIFO_FILE) $(RTL_FILES)
+
 lint-verilator:
 	$(VERILATOR) --lint-only --timing -Wall -I$(GEN_DIR) -I$(RTL_DIR) --top-module ascon_perm_unrolled $(RTL_FILES)
 	$(VERILATOR) --lint-only --timing -Wall -I$(GEN_DIR) -I$(RTL_DIR) --top-module ascon_aead128_fullblock_enc $(RTL_FILES)
 	$(VERILATOR) --lint-only --timing -Wall -I$(GEN_DIR) -I$(RTL_DIR) --top-module ascon_aead128_enc $(RTL_FILES)
 	$(VERILATOR) --lint-only --timing -Wall -I$(GEN_DIR) -I$(RTL_DIR) --top-module ascon_aead128_enc_ad $(RTL_FILES)
 	$(VERILATOR) --lint-only --timing -Wall -I$(GEN_DIR) -I$(RTL_DIR) --top-module ascon_aead128_dec_ad $(RTL_FILES)
+	$(VERILATOR) --lint-only --timing -Wall -I$(GEN_DIR) -I$(RTL_DIR) --top-module ascon_stream_fifo $(RTL_FILES)
 
 synth-yosys: synth-rpc1 synth-rpc2 synth-rpc4 synth-rpc8
 

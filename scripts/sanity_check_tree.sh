@@ -11,6 +11,7 @@ fi
 for f in \
   rtl/ascon_round_comb.v \
   rtl/ascon_perm_unrolled.v \
+  rtl/ascon_stream_fifo.v \
   rtl/ascon_aead128_fullblock_enc.v \
   rtl/ascon_aead128_enc.v \
   rtl/ascon_aead128_enc_ad.v \
@@ -20,6 +21,7 @@ for f in \
   sim/tb/tb_ascon_aead128_enc.v \
   sim/tb/tb_ascon_aead128_enc_ad.v \
   sim/tb/tb_ascon_aead128_dec_ad.v \
+  sim/tb/tb_ascon_stream_fifo.v \
   tools/ascon_c_perm_vectors.c \
   tools/ascon_c_aead128_fullblock_vectors.c \
   tools/ascon_c_aead128_vectors.c \
@@ -47,4 +49,9 @@ grep -q '^/sim/generated/\*.vh' .gitignore || {
   echo "ERROR: root .gitignore does not ignore generated vector headers"; exit 1;
 }
 
-echo "Sanity check passed: clean Phase 2.4 tree."
+if [ -d ascon-rtl-core-phase1 ]; then
+  echo "ERROR: found stale nested ascon-rtl-core-phase1 directory"
+  exit 1
+fi
+
+echo "Sanity check passed: clean Phase 3.1 tree."

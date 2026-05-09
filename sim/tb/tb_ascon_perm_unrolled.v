@@ -55,6 +55,8 @@ module tb_ascon_perm_unrolled;
     input [3:0]    rounds;
     input [319:0]  in_state;
     input [319:0]  expected;
+
+    integer timed_out;
     begin
       @(negedge clk);
       state_i  = in_state;
@@ -63,26 +65,29 @@ module tb_ascon_perm_unrolled;
       @(negedge clk);
       start_i  = 1'b0;
 
-      cycles = 0;
-      while (!done_o) begin
+      cycles    = 0;
+      timed_out = 0;
+      while (!done_o && !timed_out) begin
         @(posedge clk);
         #1;
         cycles = cycles + 1;
         if (cycles > 32) begin
           $display("FAIL %-32s timeout", name);
           errors = errors + 1;
-          disable run_perm;
+          timed_out = 1;
         end
       end
 
-      #1;
-      if (state_o !== expected) begin
-        $display("FAIL %-32s RPC=%0d rounds=%0d", name, RPC, rounds);
-        $display("  got      %080h", state_o);
-        $display("  expected %080h", expected);
-        errors = errors + 1;
-      end else begin
-        $display("PASS %-32s RPC=%0d rounds=%0d cycles=%0d", name, RPC, rounds, cycles);
+      if (!timed_out) begin
+        #1;
+        if (state_o !== expected) begin
+          $display("FAIL %-32s RPC=%0d rounds=%0d", name, RPC, rounds);
+          $display("  got      %080h", state_o);
+          $display("  expected %080h", expected);
+          errors = errors + 1;
+        end else begin
+          $display("PASS %-32s RPC=%0d rounds=%0d cycles=%0d", name, RPC, rounds, cycles);
+        end
       end
 
       @(posedge clk);

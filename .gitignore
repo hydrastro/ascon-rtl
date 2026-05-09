@@ -1,12 +1,18 @@
-<<<<<<< HEAD
-tmp
-=======
+# Build products
 /build/
-/result
-/.direnv/
-/.envrc
-/external/ascon-c/
+
+# Generated simulation vectors
+/sim/generated/*.vh
+
+# Local external dependencies
+/external/
+
+# Simulator outputs
 *.vcd
 *.fst
 *.vvp
->>>>>>> update
+
+# Patch/editor leftovers
+*.rej
+*.orig
+*~

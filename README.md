@@ -93,3 +93,13 @@ ideal_bulk_bits_per_cycle = 128 / ceil(8 / ROUNDS_PER_CYCLE)
 
 The system will only reach those rates if the wrapper can feed and drain data at
 the same rate. A CPU-fed MMIO interface will not be the final performance path.
+
+## Phase 2.3 quick check
+
+Associated-data encryption regression:
+
+```sh
+make clean && make vectors-ascon-c && make sim-aead-ad-iverilog
+make lint-verilator
+make synth-aead-ad-yosys
+```

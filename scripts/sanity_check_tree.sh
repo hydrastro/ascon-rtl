@@ -13,12 +13,15 @@ for f in \
   rtl/ascon_perm_unrolled.v \
   rtl/ascon_aead128_fullblock_enc.v \
   rtl/ascon_aead128_enc.v \
+  rtl/ascon_aead128_enc_ad.v \
   sim/tb/tb_ascon_perm_unrolled.v \
   sim/tb/tb_ascon_aead128_fullblock_enc.v \
   sim/tb/tb_ascon_aead128_enc.v \
+  sim/tb/tb_ascon_aead128_enc_ad.v \
   tools/ascon_c_perm_vectors.c \
   tools/ascon_c_aead128_fullblock_vectors.c \
   tools/ascon_c_aead128_vectors.c \
+  tools/ascon_c_aead128_ad_vectors.c \
   Makefile flake.nix; do
   test -f "$f" || { echo "ERROR: missing $f"; exit 1; }
 done
@@ -31,4 +34,4 @@ grep -Fq "full_blocks_left_q <= {4'd0, msg_bytes_i[31:4]};" rtl/ascon_aead128_en
   echo "ERROR: width-expansion fix not present in rtl/ascon_aead128_enc.v"; exit 1;
 }
 
-echo "Sanity check passed: clean Phase 2.2 tree."
+echo "Sanity check passed: clean Phase 2.3 tree."

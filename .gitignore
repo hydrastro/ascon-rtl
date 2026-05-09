@@ -16,3 +16,7 @@
 *.rej
 *.orig
 *~
+
+/result
+/.direnv/
+/.envrc

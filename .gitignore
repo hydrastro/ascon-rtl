@@ -1,1 +1,12 @@
+<<<<<<< HEAD
 tmp
+=======
+/build/
+/result
+/.direnv/
+/.envrc
+/external/ascon-c/
+*.vcd
+*.fst
+*.vvp
+>>>>>>> update

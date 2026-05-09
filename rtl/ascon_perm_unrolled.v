@@ -13,6 +13,10 @@
 //
 // The module is intentionally bus-agnostic. Later repositories/wrappers should
 // connect this to NEORV32 CFS/XBUS/SLINK, AXI, or Tiny Tapeout IOs.
+//
+// Important synthesis property:
+//   This file instantiates only RPC_INT round blocks. RPC=1 does not carry the
+//   area/timing cost of an 8-round combinational chain.
 
 module ascon_perm_unrolled #(
   parameter integer ROUNDS_PER_CYCLE = 1
@@ -29,11 +33,14 @@ module ascon_perm_unrolled #(
   output reg  [319:0] state_o
 );
 
+  // Keep only synthesis-supported unroll factors. Values between supported
+  // points round up to the next implemented datapath width.
   localparam integer RPC_INT =
-    (ROUNDS_PER_CYCLE < 1) ? 1 :
-    (ROUNDS_PER_CYCLE > 8) ? 8 : ROUNDS_PER_CYCLE;
+    (ROUNDS_PER_CYCLE <= 1) ? 1 :
+    (ROUNDS_PER_CYCLE <= 2) ? 2 :
+    (ROUNDS_PER_CYCLE <= 4) ? 4 : 8;
 
-  localparam [3:0] RPC = RPC_INT;
+  localparam [3:0] RPC = RPC_INT[3:0];
 
   reg [3:0] rounds_r;
   reg [3:0] round_ctr_r;
@@ -75,39 +82,138 @@ module ascon_perm_unrolled #(
   wire [3:0] step_count_w = (remaining_w > RPC) ? RPC : remaining_w;
   wire [3:0] rc_base_w    = (4'd12 - rounds_r) + round_ctr_r;
 
-  wire [319:0] r0_state_w;
-  wire [319:0] r1_state_w;
-  wire [319:0] r2_state_w;
-  wire [319:0] r3_state_w;
-  wire [319:0] r4_state_w;
-  wire [319:0] r5_state_w;
-  wire [319:0] r6_state_w;
-  wire [319:0] r7_state_w;
+  wire [319:0] step_state_w;
 
-  ascon_round_comb u_round0 (.state_i(state_o),    .rc_i(rc_lut(rc_base_w + 4'd0)), .state_o(r0_state_w));
-  ascon_round_comb u_round1 (.state_i(r0_state_w), .rc_i(rc_lut(rc_base_w + 4'd1)), .state_o(r1_state_w));
-  ascon_round_comb u_round2 (.state_i(r1_state_w), .rc_i(rc_lut(rc_base_w + 4'd2)), .state_o(r2_state_w));
-  ascon_round_comb u_round3 (.state_i(r2_state_w), .rc_i(rc_lut(rc_base_w + 4'd3)), .state_o(r3_state_w));
-  ascon_round_comb u_round4 (.state_i(r3_state_w), .rc_i(rc_lut(rc_base_w + 4'd4)), .state_o(r4_state_w));
-  ascon_round_comb u_round5 (.state_i(r4_state_w), .rc_i(rc_lut(rc_base_w + 4'd5)), .state_o(r5_state_w));
-  ascon_round_comb u_round6 (.state_i(r5_state_w), .rc_i(rc_lut(rc_base_w + 4'd6)), .state_o(r6_state_w));
-  ascon_round_comb u_round7 (.state_i(r6_state_w), .rc_i(rc_lut(rc_base_w + 4'd7)), .state_o(r7_state_w));
+  generate
+    if (RPC_INT == 1) begin : gen_rpc1
+      wire [319:0] r0_state_w;
 
-  reg [319:0] step_state_w;
+      ascon_round_comb u_round0 (
+        .state_i(state_o),
+        .rc_i   (rc_lut(rc_base_w + 4'd0)),
+        .state_o(r0_state_w)
+      );
 
-  always @(*) begin
-    case (step_count_w)
-      4'd0:    step_state_w = state_o;
-      4'd1:    step_state_w = r0_state_w;
-      4'd2:    step_state_w = r1_state_w;
-      4'd3:    step_state_w = r2_state_w;
-      4'd4:    step_state_w = r3_state_w;
-      4'd5:    step_state_w = r4_state_w;
-      4'd6:    step_state_w = r5_state_w;
-      4'd7:    step_state_w = r6_state_w;
-      default: step_state_w = r7_state_w;
-    endcase
-  end
+      assign step_state_w = r0_state_w;
+    end else if (RPC_INT == 2) begin : gen_rpc2
+      wire [319:0] r0_state_w;
+      wire [319:0] r1_state_w;
+
+      ascon_round_comb u_round0 (
+        .state_i(state_o),
+        .rc_i   (rc_lut(rc_base_w + 4'd0)),
+        .state_o(r0_state_w)
+      );
+
+      ascon_round_comb u_round1 (
+        .state_i(r0_state_w),
+        .rc_i   (rc_lut(rc_base_w + 4'd1)),
+        .state_o(r1_state_w)
+      );
+
+      assign step_state_w = (step_count_w == 4'd1) ? r0_state_w : r1_state_w;
+    end else if (RPC_INT == 4) begin : gen_rpc4
+      wire [319:0] r0_state_w;
+      wire [319:0] r1_state_w;
+      wire [319:0] r2_state_w;
+      wire [319:0] r3_state_w;
+
+      ascon_round_comb u_round0 (
+        .state_i(state_o),
+        .rc_i   (rc_lut(rc_base_w + 4'd0)),
+        .state_o(r0_state_w)
+      );
+
+      ascon_round_comb u_round1 (
+        .state_i(r0_state_w),
+        .rc_i   (rc_lut(rc_base_w + 4'd1)),
+        .state_o(r1_state_w)
+      );
+
+      ascon_round_comb u_round2 (
+        .state_i(r1_state_w),
+        .rc_i   (rc_lut(rc_base_w + 4'd2)),
+        .state_o(r2_state_w)
+      );
+
+      ascon_round_comb u_round3 (
+        .state_i(r2_state_w),
+        .rc_i   (rc_lut(rc_base_w + 4'd3)),
+        .state_o(r3_state_w)
+      );
+
+      assign step_state_w =
+        (step_count_w == 4'd1) ? r0_state_w :
+        (step_count_w == 4'd2) ? r1_state_w :
+        (step_count_w == 4'd3) ? r2_state_w : r3_state_w;
+    end else begin : gen_rpc8
+      wire [319:0] r0_state_w;
+      wire [319:0] r1_state_w;
+      wire [319:0] r2_state_w;
+      wire [319:0] r3_state_w;
+      wire [319:0] r4_state_w;
+      wire [319:0] r5_state_w;
+      wire [319:0] r6_state_w;
+      wire [319:0] r7_state_w;
+
+      ascon_round_comb u_round0 (
+        .state_i(state_o),
+        .rc_i   (rc_lut(rc_base_w + 4'd0)),
+        .state_o(r0_state_w)
+      );
+
+      ascon_round_comb u_round1 (
+        .state_i(r0_state_w),
+        .rc_i   (rc_lut(rc_base_w + 4'd1)),
+        .state_o(r1_state_w)
+      );
+
+      ascon_round_comb u_round2 (
+        .state_i(r1_state_w),
+        .rc_i   (rc_lut(rc_base_w + 4'd2)),
+        .state_o(r2_state_w)
+      );
+
+      ascon_round_comb u_round3 (
+        .state_i(r2_state_w),
+        .rc_i   (rc_lut(rc_base_w + 4'd3)),
+        .state_o(r3_state_w)
+      );
+
+      ascon_round_comb u_round4 (
+        .state_i(r3_state_w),
+        .rc_i   (rc_lut(rc_base_w + 4'd4)),
+        .state_o(r4_state_w)
+      );
+
+      ascon_round_comb u_round5 (
+        .state_i(r4_state_w),
+        .rc_i   (rc_lut(rc_base_w + 4'd5)),
+        .state_o(r5_state_w)
+      );
+
+      ascon_round_comb u_round6 (
+        .state_i(r5_state_w),
+        .rc_i   (rc_lut(rc_base_w + 4'd6)),
+        .state_o(r6_state_w)
+      );
+
+      ascon_round_comb u_round7 (
+        .state_i(r6_state_w),
+        .rc_i   (rc_lut(rc_base_w + 4'd7)),
+        .state_o(r7_state_w)
+      );
+
+      assign step_state_w =
+        (step_count_w == 4'd1) ? r0_state_w :
+        (step_count_w == 4'd2) ? r1_state_w :
+        (step_count_w == 4'd3) ? r2_state_w :
+        (step_count_w == 4'd4) ? r3_state_w :
+        (step_count_w == 4'd5) ? r4_state_w :
+        (step_count_w == 4'd6) ? r5_state_w :
+        (step_count_w == 4'd7) ? r6_state_w : r7_state_w;
+    end
+  endgenerate
 
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin

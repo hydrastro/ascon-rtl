@@ -24,7 +24,9 @@ TB_FILE := $(TB_DIR)/tb_ascon_perm_unrolled.v
 VEC_FILE := $(GEN_DIR)/ascon_perm_vectors.vh
 IVFLAGS := -g2005-sv -I$(GEN_DIR) -I$(RTL_DIR)
 
-.PHONY: all sim sim-iverilog sim-rpc1 sim-rpc2 sim-rpc4 sim-rpc8 vectors vectors-python vectors-ascon-c lint-verilator synth-yosys clean
+.PHONY: all sim sim-iverilog sim-rpc1 sim-rpc2 sim-rpc4 sim-rpc8 \
+	vectors vectors-python vectors-ascon-c lint-verilator \
+	synth-yosys synth-rpc1 synth-rpc2 synth-rpc4 synth-rpc8 clean
 
 all: sim-iverilog
 
@@ -78,9 +80,23 @@ $(BUILD_DIR)/tb_ascon_perm_rpc8.vvp: $(RTL_FILES) $(TB_FILE) $(VEC_FILE) | $(BUI
 lint-verilator:
 	$(VERILATOR) --lint-only --timing -Wall -I$(GEN_DIR) -I$(RTL_DIR) $(RTL_FILES) $(TB_FILE)
 
-synth-yosys: | $(BUILD_DIR)
-	$(YOSYS) -q -p 'read_verilog $(RTL_FILES); synth -top ascon_perm_unrolled; stat' > $(BUILD_DIR)/yosys_stat.txt
-	cat $(BUILD_DIR)/yosys_stat.txt
+synth-yosys: synth-rpc1 synth-rpc2 synth-rpc4 synth-rpc8
+
+synth-rpc1: | $(BUILD_DIR)
+	$(YOSYS) -p 'read_verilog -sv $(RTL_FILES); chparam -set ROUNDS_PER_CYCLE 1 ascon_perm_unrolled; synth -top ascon_perm_unrolled; stat -top ascon_perm_unrolled' > $(BUILD_DIR)/yosys_stat_rpc1.txt
+	cat $(BUILD_DIR)/yosys_stat_rpc1.txt
+
+synth-rpc2: | $(BUILD_DIR)
+	$(YOSYS) -p 'read_verilog -sv $(RTL_FILES); chparam -set ROUNDS_PER_CYCLE 2 ascon_perm_unrolled; synth -top ascon_perm_unrolled; stat -top ascon_perm_unrolled' > $(BUILD_DIR)/yosys_stat_rpc2.txt
+	cat $(BUILD_DIR)/yosys_stat_rpc2.txt
+
+synth-rpc4: | $(BUILD_DIR)
+	$(YOSYS) -p 'read_verilog -sv $(RTL_FILES); chparam -set ROUNDS_PER_CYCLE 4 ascon_perm_unrolled; synth -top ascon_perm_unrolled; stat -top ascon_perm_unrolled' > $(BUILD_DIR)/yosys_stat_rpc4.txt
+	cat $(BUILD_DIR)/yosys_stat_rpc4.txt
+
+synth-rpc8: | $(BUILD_DIR)
+	$(YOSYS) -p 'read_verilog -sv $(RTL_FILES); chparam -set ROUNDS_PER_CYCLE 8 ascon_perm_unrolled; synth -top ascon_perm_unrolled; stat -top ascon_perm_unrolled' > $(BUILD_DIR)/yosys_stat_rpc8.txt
+	cat $(BUILD_DIR)/yosys_stat_rpc8.txt
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)

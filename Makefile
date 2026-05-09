@@ -29,8 +29,7 @@ RTL_FILES := \
 	$(RTL_DIR)/ascon_aead128_enc_ad_buffered.v \
 	$(RTL_DIR)/ascon_aead128_dec_ad_buffered.v \
 	$(RTL_DIR)/ascon_aead128_buffered.v \
-	$(RTL_DIR)/ascon_aead128_mmio32.v \
-	$(RTL_DIR)/ascon_aead128_xbus.v
+	$(RTL_DIR)/ascon_aead128_mmio32.v
 
 TB_PERM_FILE := $(TB_DIR)/tb_ascon_perm_unrolled.v
 TB_AEAD_FILE := $(TB_DIR)/tb_ascon_aead128_fullblock_enc.v
@@ -43,7 +42,6 @@ TB_AEAD_BUFFERED_FILE := $(TB_DIR)/tb_ascon_aead128_buffered.v
 TB_FIFO_FILE := $(TB_DIR)/tb_ascon_stream_fifo.v
 TB_BLOCK32_FILE := $(TB_DIR)/tb_ascon_block32_adapters.v
 TB_MMIO32_FILE := $(TB_DIR)/tb_ascon_aead128_mmio32.v
-TB_XBUS_FILE := $(TB_DIR)/tb_ascon_aead128_xbus.v
 VEC_PERM_FILE := $(GEN_DIR)/ascon_perm_vectors.vh
 VEC_AEAD_FILE := $(GEN_DIR)/ascon_aead128_fullblock_vectors.vh
 VEC_AEAD_VAR_FILE := $(GEN_DIR)/ascon_aead128_vectors.vh
@@ -61,10 +59,9 @@ IVFLAGS := -g2005-sv -I$(GEN_DIR) -I$(RTL_DIR)
 	sim-aead-buffered-dec-rpc1 sim-aead-buffered-dec-rpc2 sim-aead-buffered-dec-rpc4 sim-aead-buffered-dec-rpc8 \
 	sim-fifo-iverilog sim-block32-iverilog sim-mmio32-iverilog sim-mmio32-enc-rpc1 sim-mmio32-enc-rpc2 sim-mmio32-enc-rpc4 sim-mmio32-enc-rpc8 \
 	sim-mmio32-dec-rpc1 sim-mmio32-dec-rpc2 sim-mmio32-dec-rpc4 sim-mmio32-dec-rpc8 \
-	sim-xbus-iverilog sim-xbus-enc-rpc1 sim-xbus-enc-rpc2 sim-xbus-enc-rpc4 sim-xbus-enc-rpc8 sim-xbus-dec-rpc1 sim-xbus-dec-rpc2 sim-xbus-dec-rpc4 sim-xbus-dec-rpc8 vectors vectors-python vectors-ascon-c lint-verilator \
+	vectors vectors-python vectors-ascon-c lint-verilator \
 	synth-yosys synth-rpc1 synth-rpc2 synth-rpc4 synth-rpc8 synth-block32-yosys synth-block32-packer synth-block32-unpacker synth-mmio32-yosys \
 	synth-mmio32-enc-rpc1 synth-mmio32-enc-rpc2 synth-mmio32-enc-rpc4 synth-mmio32-enc-rpc8 synth-mmio32-dec-rpc1 synth-mmio32-dec-rpc2 synth-mmio32-dec-rpc4 synth-mmio32-dec-rpc8 \
-	synth-xbus-yosys synth-xbus-enc-rpc1 synth-xbus-enc-rpc2 synth-xbus-enc-rpc4 synth-xbus-enc-rpc8 synth-xbus-dec-rpc1 synth-xbus-dec-rpc2 synth-xbus-dec-rpc4 synth-xbus-dec-rpc8 \
 	synth-aead-yosys synth-aead-rpc1 synth-aead-rpc2 synth-aead-rpc4 synth-aead-rpc8 \
 	synth-aead-var-yosys synth-aead-var-rpc1 synth-aead-var-rpc2 synth-aead-var-rpc4 synth-aead-var-rpc8 \
 	synth-aead-ad-yosys synth-aead-ad-rpc1 synth-aead-ad-rpc2 synth-aead-ad-rpc4 synth-aead-ad-rpc8 \
@@ -76,7 +73,7 @@ IVFLAGS := -g2005-sv -I$(GEN_DIR) -I$(RTL_DIR)
 
 all: sim
 
-sim: sim-iverilog sim-aead-iverilog sim-aead-var-iverilog sim-aead-ad-iverilog sim-aead-dec-ad-iverilog sim-fifo-iverilog sim-block32-iverilog sim-aead-buf-enc-iverilog sim-aead-buf-dec-iverilog sim-aead-buffered-iverilog sim-mmio32-iverilog sim-xbus-iverilog
+sim: sim-iverilog sim-aead-iverilog sim-aead-var-iverilog sim-aead-ad-iverilog sim-aead-dec-ad-iverilog sim-fifo-iverilog sim-block32-iverilog sim-aead-buf-enc-iverilog sim-aead-buf-dec-iverilog sim-aead-buffered-iverilog sim-mmio32-iverilog
 
 vectors: vectors-ascon-c
 
@@ -425,55 +422,6 @@ $(BUILD_DIR)/tb_ascon_aead128_mmio32_dec_rpc8.vvp: $(RTL_FILES) $(TB_MMIO32_FILE
 	$(IVERILOG) $(IVFLAGS) -P tb_ascon_aead128_mmio32.DECRYPT=1 -P tb_ascon_aead128_mmio32.RPC=8 -o $@ $(TB_MMIO32_FILE) $(RTL_FILES)
 
 
-sim-xbus-iverilog: sim-xbus-enc-rpc1 sim-xbus-enc-rpc2 sim-xbus-enc-rpc4 sim-xbus-enc-rpc8 sim-xbus-dec-rpc1 sim-xbus-dec-rpc2 sim-xbus-dec-rpc4 sim-xbus-dec-rpc8
-
-sim-xbus-enc-rpc1: $(BUILD_DIR)/tb_ascon_aead128_xbus_enc_rpc1.vvp
-	$(VVP) $<
-
-sim-xbus-enc-rpc2: $(BUILD_DIR)/tb_ascon_aead128_xbus_enc_rpc2.vvp
-	$(VVP) $<
-
-sim-xbus-enc-rpc4: $(BUILD_DIR)/tb_ascon_aead128_xbus_enc_rpc4.vvp
-	$(VVP) $<
-
-sim-xbus-enc-rpc8: $(BUILD_DIR)/tb_ascon_aead128_xbus_enc_rpc8.vvp
-	$(VVP) $<
-
-sim-xbus-dec-rpc1: $(BUILD_DIR)/tb_ascon_aead128_xbus_dec_rpc1.vvp
-	$(VVP) $<
-
-sim-xbus-dec-rpc2: $(BUILD_DIR)/tb_ascon_aead128_xbus_dec_rpc2.vvp
-	$(VVP) $<
-
-sim-xbus-dec-rpc4: $(BUILD_DIR)/tb_ascon_aead128_xbus_dec_rpc4.vvp
-	$(VVP) $<
-
-sim-xbus-dec-rpc8: $(BUILD_DIR)/tb_ascon_aead128_xbus_dec_rpc8.vvp
-	$(VVP) $<
-
-$(BUILD_DIR)/tb_ascon_aead128_xbus_enc_rpc1.vvp: $(RTL_FILES) $(TB_XBUS_FILE) $(VEC_AEAD_AD_FILE) | $(BUILD_DIR)
-	$(IVERILOG) $(IVFLAGS) -P tb_ascon_aead128_xbus.DECRYPT=0 -P tb_ascon_aead128_xbus.RPC=1 -o $@ $(TB_XBUS_FILE) $(RTL_FILES)
-
-$(BUILD_DIR)/tb_ascon_aead128_xbus_enc_rpc2.vvp: $(RTL_FILES) $(TB_XBUS_FILE) $(VEC_AEAD_AD_FILE) | $(BUILD_DIR)
-	$(IVERILOG) $(IVFLAGS) -P tb_ascon_aead128_xbus.DECRYPT=0 -P tb_ascon_aead128_xbus.RPC=2 -o $@ $(TB_XBUS_FILE) $(RTL_FILES)
-
-$(BUILD_DIR)/tb_ascon_aead128_xbus_enc_rpc4.vvp: $(RTL_FILES) $(TB_XBUS_FILE) $(VEC_AEAD_AD_FILE) | $(BUILD_DIR)
-	$(IVERILOG) $(IVFLAGS) -P tb_ascon_aead128_xbus.DECRYPT=0 -P tb_ascon_aead128_xbus.RPC=4 -o $@ $(TB_XBUS_FILE) $(RTL_FILES)
-
-$(BUILD_DIR)/tb_ascon_aead128_xbus_enc_rpc8.vvp: $(RTL_FILES) $(TB_XBUS_FILE) $(VEC_AEAD_AD_FILE) | $(BUILD_DIR)
-	$(IVERILOG) $(IVFLAGS) -P tb_ascon_aead128_xbus.DECRYPT=0 -P tb_ascon_aead128_xbus.RPC=8 -o $@ $(TB_XBUS_FILE) $(RTL_FILES)
-
-$(BUILD_DIR)/tb_ascon_aead128_xbus_dec_rpc1.vvp: $(RTL_FILES) $(TB_XBUS_FILE) $(VEC_AEAD_AD_FILE) | $(BUILD_DIR)
-	$(IVERILOG) $(IVFLAGS) -P tb_ascon_aead128_xbus.DECRYPT=1 -P tb_ascon_aead128_xbus.RPC=1 -o $@ $(TB_XBUS_FILE) $(RTL_FILES)
-
-$(BUILD_DIR)/tb_ascon_aead128_xbus_dec_rpc2.vvp: $(RTL_FILES) $(TB_XBUS_FILE) $(VEC_AEAD_AD_FILE) | $(BUILD_DIR)
-	$(IVERILOG) $(IVFLAGS) -P tb_ascon_aead128_xbus.DECRYPT=1 -P tb_ascon_aead128_xbus.RPC=2 -o $@ $(TB_XBUS_FILE) $(RTL_FILES)
-
-$(BUILD_DIR)/tb_ascon_aead128_xbus_dec_rpc4.vvp: $(RTL_FILES) $(TB_XBUS_FILE) $(VEC_AEAD_AD_FILE) | $(BUILD_DIR)
-	$(IVERILOG) $(IVFLAGS) -P tb_ascon_aead128_xbus.DECRYPT=1 -P tb_ascon_aead128_xbus.RPC=4 -o $@ $(TB_XBUS_FILE) $(RTL_FILES)
-
-$(BUILD_DIR)/tb_ascon_aead128_xbus_dec_rpc8.vvp: $(RTL_FILES) $(TB_XBUS_FILE) $(VEC_AEAD_AD_FILE) | $(BUILD_DIR)
-	$(IVERILOG) $(IVFLAGS) -P tb_ascon_aead128_xbus.DECRYPT=1 -P tb_ascon_aead128_xbus.RPC=8 -o $@ $(TB_XBUS_FILE) $(RTL_FILES)
 
 lint-verilator:
 	$(VERILATOR) --lint-only --timing -Wall -I$(GEN_DIR) -I$(RTL_DIR) --top-module ascon_perm_unrolled $(RTL_FILES)
@@ -702,40 +650,6 @@ synth-mmio32-dec-rpc8: | $(BUILD_DIR)
 	$(YOSYS) -p 'read_verilog -sv $(RTL_FILES); chparam -set DECRYPT 1 ascon_aead128_mmio32; chparam -set ROUNDS_PER_CYCLE 8 ascon_aead128_mmio32; synth -top ascon_aead128_mmio32; stat -top ascon_aead128_mmio32' > $(BUILD_DIR)/yosys_mmio32_dec_stat_rpc8.txt
 	cat $(BUILD_DIR)/yosys_mmio32_dec_stat_rpc8.txt
 
-
-synth-xbus-yosys: synth-xbus-enc-rpc1 synth-xbus-enc-rpc2 synth-xbus-enc-rpc4 synth-xbus-enc-rpc8 synth-xbus-dec-rpc1 synth-xbus-dec-rpc2 synth-xbus-dec-rpc4 synth-xbus-dec-rpc8
-
-synth-xbus-enc-rpc1: | $(BUILD_DIR)
-	$(YOSYS) -p 'read_verilog -sv $(RTL_FILES); chparam -set DECRYPT 0 ascon_aead128_xbus; chparam -set ROUNDS_PER_CYCLE 1 ascon_aead128_xbus; synth -top ascon_aead128_xbus; stat -top ascon_aead128_xbus' > $(BUILD_DIR)/yosys_xbus_enc_stat_rpc1.txt
-	cat $(BUILD_DIR)/yosys_xbus_enc_stat_rpc1.txt
-
-synth-xbus-enc-rpc2: | $(BUILD_DIR)
-	$(YOSYS) -p 'read_verilog -sv $(RTL_FILES); chparam -set DECRYPT 0 ascon_aead128_xbus; chparam -set ROUNDS_PER_CYCLE 2 ascon_aead128_xbus; synth -top ascon_aead128_xbus; stat -top ascon_aead128_xbus' > $(BUILD_DIR)/yosys_xbus_enc_stat_rpc2.txt
-	cat $(BUILD_DIR)/yosys_xbus_enc_stat_rpc2.txt
-
-synth-xbus-enc-rpc4: | $(BUILD_DIR)
-	$(YOSYS) -p 'read_verilog -sv $(RTL_FILES); chparam -set DECRYPT 0 ascon_aead128_xbus; chparam -set ROUNDS_PER_CYCLE 4 ascon_aead128_xbus; synth -top ascon_aead128_xbus; stat -top ascon_aead128_xbus' > $(BUILD_DIR)/yosys_xbus_enc_stat_rpc4.txt
-	cat $(BUILD_DIR)/yosys_xbus_enc_stat_rpc4.txt
-
-synth-xbus-enc-rpc8: | $(BUILD_DIR)
-	$(YOSYS) -p 'read_verilog -sv $(RTL_FILES); chparam -set DECRYPT 0 ascon_aead128_xbus; chparam -set ROUNDS_PER_CYCLE 8 ascon_aead128_xbus; synth -top ascon_aead128_xbus; stat -top ascon_aead128_xbus' > $(BUILD_DIR)/yosys_xbus_enc_stat_rpc8.txt
-	cat $(BUILD_DIR)/yosys_xbus_enc_stat_rpc8.txt
-
-synth-xbus-dec-rpc1: | $(BUILD_DIR)
-	$(YOSYS) -p 'read_verilog -sv $(RTL_FILES); chparam -set DECRYPT 1 ascon_aead128_xbus; chparam -set ROUNDS_PER_CYCLE 1 ascon_aead128_xbus; synth -top ascon_aead128_xbus; stat -top ascon_aead128_xbus' > $(BUILD_DIR)/yosys_xbus_dec_stat_rpc1.txt
-	cat $(BUILD_DIR)/yosys_xbus_dec_stat_rpc1.txt
-
-synth-xbus-dec-rpc2: | $(BUILD_DIR)
-	$(YOSYS) -p 'read_verilog -sv $(RTL_FILES); chparam -set DECRYPT 1 ascon_aead128_xbus; chparam -set ROUNDS_PER_CYCLE 2 ascon_aead128_xbus; synth -top ascon_aead128_xbus; stat -top ascon_aead128_xbus' > $(BUILD_DIR)/yosys_xbus_dec_stat_rpc2.txt
-	cat $(BUILD_DIR)/yosys_xbus_dec_stat_rpc2.txt
-
-synth-xbus-dec-rpc4: | $(BUILD_DIR)
-	$(YOSYS) -p 'read_verilog -sv $(RTL_FILES); chparam -set DECRYPT 1 ascon_aead128_xbus; chparam -set ROUNDS_PER_CYCLE 4 ascon_aead128_xbus; synth -top ascon_aead128_xbus; stat -top ascon_aead128_xbus' > $(BUILD_DIR)/yosys_xbus_dec_stat_rpc4.txt
-	cat $(BUILD_DIR)/yosys_xbus_dec_stat_rpc4.txt
-
-synth-xbus-dec-rpc8: | $(BUILD_DIR)
-	$(YOSYS) -p 'read_verilog -sv $(RTL_FILES); chparam -set DECRYPT 1 ascon_aead128_xbus; chparam -set ROUNDS_PER_CYCLE 8 ascon_aead128_xbus; synth -top ascon_aead128_xbus; stat -top ascon_aead128_xbus' > $(BUILD_DIR)/yosys_xbus_dec_stat_rpc8.txt
-	cat $(BUILD_DIR)/yosys_xbus_dec_stat_rpc8.txt
 
 
 $(BUILD_DIR):

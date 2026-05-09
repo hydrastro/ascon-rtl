@@ -1,3 +1,31 @@
+# Build products
+/build/
+
+# Generated simulation vectors
+/sim/generated/*.vh
+
+# Local external dependencies
+/external/
+
+# Nix / direnv
+/result
+/.direnv/
+/.envrc
+
+# Simulator outputs
+*.vcd
+*.fst
+*.vvp
+
+# Transfer/archive artifacts
+*.patch
+*.zip
+*.tar.gz
+
+# Patch/editor leftovers
+*.rej
+*.orig
+*~
 # Local external dependencies
 /external/
 

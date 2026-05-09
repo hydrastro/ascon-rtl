@@ -1,9 +1,3 @@
-# Build products
-/build/
-
-# Generated simulation vectors
-/sim/generated/*.vh
-
 # Local external dependencies
 /external/
 

@@ -39,7 +39,7 @@ module ascon_block_unpacker32 (
 );
 
   reg [127:0] block_q;
-  reg [4:0]   block_bytes_q;
+  reg [1:0]   block_byte_rem_q;
   reg [2:0]   total_words_q;
   reg [1:0]   word_index_q;
   reg         active_q;
@@ -98,25 +98,25 @@ module ascon_block_unpacker32 (
   endfunction
 
   assign word_data_o  = select_word(block_q, word_index_q);
-  assign word_bytes_o = word_last_o ? last_word_bytes(block_bytes_q[1:0]) : 3'd4;
+  assign word_bytes_o = word_last_o ? last_word_bytes(block_byte_rem_q) : 3'd4;
 
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       block_q       <= 128'd0;
-      block_bytes_q <= 5'd0;
+      block_byte_rem_q <= 2'd0;
       total_words_q <= 3'd0;
       word_index_q  <= 2'd0;
       active_q      <= 1'b0;
     end else if (clear_i) begin
       block_q       <= 128'd0;
-      block_bytes_q <= 5'd0;
+      block_byte_rem_q <= 2'd0;
       total_words_q <= 3'd0;
       word_index_q  <= 2'd0;
       active_q      <= 1'b0;
     end else begin
       if (in_fire_w) begin
         block_q       <= block_data_i;
-        block_bytes_q <= block_bytes_i;
+        block_byte_rem_q <= block_bytes_i[1:0];
         total_words_q <= words_for_bytes(block_bytes_i);
         word_index_q  <= 2'd0;
         active_q      <= (block_bytes_i != 5'd0);

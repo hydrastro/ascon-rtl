@@ -16,11 +16,13 @@ for f in \
   rtl/ascon_aead128_enc.v \
   rtl/ascon_aead128_enc_ad.v \
   rtl/ascon_aead128_dec_ad.v \
+  rtl/ascon_aead128_enc_ad_buffered.v \
   sim/tb/tb_ascon_perm_unrolled.v \
   sim/tb/tb_ascon_aead128_fullblock_enc.v \
   sim/tb/tb_ascon_aead128_enc.v \
   sim/tb/tb_ascon_aead128_enc_ad.v \
   sim/tb/tb_ascon_aead128_dec_ad.v \
+  sim/tb/tb_ascon_aead128_enc_ad_buffered.v \
   sim/tb/tb_ascon_stream_fifo.v \
   tools/ascon_c_perm_vectors.c \
   tools/ascon_c_aead128_fullblock_vectors.c \
@@ -54,4 +56,4 @@ if [ -d ascon-rtl-core-phase1 ]; then
   exit 1
 fi
 
-echo "Sanity check passed: clean Phase 3.1 tree."
+echo "Sanity check passed: clean Phase 3.2 tree."

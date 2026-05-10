@@ -869,3 +869,44 @@ synth-aead-axi-dec-rpc4: | $(BUILD_DIR)
 synth-aead-axi-dec-rpc8: | $(BUILD_DIR)
 	$(YOSYS) -p 'read_verilog $(AXI_FULL_RTL_FILES); chparam -set DECRYPT 1 -set ROUNDS_PER_CYCLE 8 ascon_aead128_axi; synth -top ascon_aead128_axi; check; stat' > $(BUILD_DIR)/yosys_aead_axi_dec_rpc8_stat.txt
 	cat $(BUILD_DIR)/yosys_aead_axi_dec_rpc8_stat.txt
+
+# ---------------------------------------------------------------------------
+# TT-0 TINY TAPEOUT FEASIBILITY PROFILE
+# ---------------------------------------------------------------------------
+#
+# These targets synthesize the smallest useful core configurations without
+# FIFOs, MMIO, AXI, or platform wrappers. They are intended for early Tiny
+# Tapeout feasibility, not final TT implementation.
+
+TT0_DIR := $(BUILD_DIR)/tt0
+
+.PHONY: synth-tt0-yosys \
+	synth-tt0-perm-rpc1 synth-tt0-enc-rpc1 synth-tt0-enc-ad-rpc1 synth-tt0-dec-ad-rpc1 \
+	report-tt0-stats clean-tt0
+
+$(TT0_DIR):
+	mkdir -p $(TT0_DIR)
+
+synth-tt0-yosys: synth-tt0-perm-rpc1 synth-tt0-enc-rpc1 synth-tt0-enc-ad-rpc1 synth-tt0-dec-ad-rpc1 report-tt0-stats
+
+synth-tt0-perm-rpc1: | $(TT0_DIR)
+	$(YOSYS) -p 'read_verilog $(RTL_DIR)/ascon_round_comb.v $(RTL_DIR)/ascon_perm_unrolled.v; chparam -set ROUNDS_PER_CYCLE 1 ascon_perm_unrolled; synth -top ascon_perm_unrolled; check; stat' > $(TT0_DIR)/tt0_perm_rpc1.txt
+	cat $(TT0_DIR)/tt0_perm_rpc1.txt
+
+synth-tt0-enc-rpc1: | $(TT0_DIR)
+	$(YOSYS) -p 'read_verilog $(RTL_DIR)/ascon_round_comb.v $(RTL_DIR)/ascon_perm_unrolled.v $(RTL_DIR)/ascon_aead128_enc.v; chparam -set ROUNDS_PER_CYCLE 1 ascon_aead128_enc; synth -top ascon_aead128_enc; check; stat' > $(TT0_DIR)/tt0_enc_rpc1.txt
+	cat $(TT0_DIR)/tt0_enc_rpc1.txt
+
+synth-tt0-enc-ad-rpc1: | $(TT0_DIR)
+	$(YOSYS) -p 'read_verilog $(RTL_DIR)/ascon_round_comb.v $(RTL_DIR)/ascon_perm_unrolled.v $(RTL_DIR)/ascon_aead128_enc_ad.v; chparam -set ROUNDS_PER_CYCLE 1 ascon_aead128_enc_ad; synth -top ascon_aead128_enc_ad; check; stat' > $(TT0_DIR)/tt0_enc_ad_rpc1.txt
+	cat $(TT0_DIR)/tt0_enc_ad_rpc1.txt
+
+synth-tt0-dec-ad-rpc1: | $(TT0_DIR)
+	$(YOSYS) -p 'read_verilog $(RTL_DIR)/ascon_round_comb.v $(RTL_DIR)/ascon_perm_unrolled.v $(RTL_DIR)/ascon_aead128_dec_ad.v; chparam -set ROUNDS_PER_CYCLE 1 ascon_aead128_dec_ad; synth -top ascon_aead128_dec_ad; check; stat' > $(TT0_DIR)/tt0_dec_ad_rpc1.txt
+	cat $(TT0_DIR)/tt0_dec_ad_rpc1.txt
+
+report-tt0-stats:
+	python3 tools/report_tt0_stats.py $(TT0_DIR)/*.txt
+
+clean-tt0:
+	rm -rf $(TT0_DIR)
